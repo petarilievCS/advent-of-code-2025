@@ -12,31 +12,29 @@ def main():
             bank = line.strip()
             banks.append(bank)
 
-    def find_max_voltage(bank, current_batteries):
-        dp = {}
-        if len(current_batteries) == total_batteries:
-            return int(current_batteries)
-        
-        if current_batteries in dp:
-            return dp[current_batteries]
-
-        current_number_of_batteries = len(current_batteries)
-        missing_number_of_batteries = total_batteries - current_number_of_batteries
-        # end = len(bank)
-        end = len(bank) - missing_number_of_batteries + 1
-        
-        max_voltage = 0
-        for position in range(end):
-            digit = bank[position]
-            voltage = find_max_voltage(bank[position + 1:], current_batteries + digit)
-            max_voltage = max(voltage, max_voltage)
-
-        dp[current_batteries] = max_voltage
-        return max_voltage
-
     result = 0
+
     for bank in banks:
-        result += find_max_voltage(bank, "")
+        max_voltage_string = bank[:total_batteries]
+        max_voltage = int(max_voltage_string)
+
+        # Iteration
+        for position in range(total_batteries, len(bank)):
+            iteration_max_voltage = 0
+            battery = bank[position]
+
+            for max_voltage_position in range(0, len(max_voltage_string)):
+                first_part = max_voltage_string[0:max_voltage_position]
+                second_part = max_voltage_string[max_voltage_position + 1:]
+                voltage_string = first_part + second_part + battery
+                voltage = int(voltage_string)
+                iteration_max_voltage = max(voltage, iteration_max_voltage)
+
+            if iteration_max_voltage > max_voltage:
+                max_voltage_string = str(iteration_max_voltage)
+                max_voltage = iteration_max_voltage
+
+        result += max_voltage
 
     print(result)
 
