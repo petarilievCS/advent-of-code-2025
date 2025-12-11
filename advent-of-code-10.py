@@ -1,27 +1,29 @@
 import sys
 
+# TODO: Implement in NumPy
+
 class Machine:
-    def __init__(self, goal_indicators, button_wirings):
-        self.goal_indicators = goal_indicators
-        self.indicators = [False] * len(goal_indicators)
+    def __init__(self, button_wirings, goal_joltages):
         self.buttons = button_wirings
+        self.goal_joltages = goal_joltages
+        self.joltages = [0] * len(goal_joltages)
 
     def is_started(self):
-        return self.goal_indicators == self.indicators
-    
-    def toggle(self, button):
+        return self.joltages == self.goal_joltages
+
+    def adjust_joltage(self, button, amount):
         for toggle in button:
-            self.indicators[toggle] = not self.indicators[toggle]
+            self.joltages[toggle] += amount
 
 def dfs(machine, num_toggles):
     if num_toggles == 0:
         return machine.is_started()
     else:
         for button in machine.buttons:
-            machine.toggle(button)
+            machine.adjust_joltage(button, 1)
             if dfs(machine, num_toggles - 1):
                 return True
-            machine.toggle(button)
+            machine.adjust_joltage(button, -1)
     return False
 
 def main():
@@ -34,16 +36,6 @@ def main():
             line = line.strip()
             tokens = line.split()
 
-            # Indicator lights
-            indicator_token = tokens[0] # [.##.]
-            indicator_token = indicator_token[1:-1] # .##.
-            goal_indicators = list(indicator_token)
-            for i in range(len(goal_indicators)):
-                if goal_indicators[i] == "#":
-                    goal_indicators[i] = True
-                else:
-                    goal_indicators[i] = False
-
             # Buttons
             button_tokens = tokens[1:-1]
             button_wirings = []
@@ -54,11 +46,12 @@ def main():
                 button_wirings.append(button_wiring)
 
              # Joltages
-            # TODO: Implement in Part 2
-
+            joltage_token = tokens[-1]
+            joltages = [int(joltage_str) for joltage_str in joltage_token[1:-1].split(",")]
+            
             machine = Machine(
-                goal_indicators=goal_indicators, 
-                button_wirings=button_wirings
+                button_wirings=button_wirings,
+                goal_joltages=joltages
             )
             machines.append(machine)
 
@@ -67,6 +60,7 @@ def main():
         num_toggles = 1
         
         while True:
+            print(f"Running with {num_toggles} toggles")
             if dfs(machine, num_toggles):
                 break
             num_toggles += 1
