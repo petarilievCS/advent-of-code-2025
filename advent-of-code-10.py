@@ -1,6 +1,5 @@
 import sys
-
-# TODO: Implement in NumPy
+import time
 
 class Machine:
     def __init__(self, button_wirings, goal_joltages):
@@ -12,18 +11,26 @@ class Machine:
         return self.joltages == self.goal_joltages
 
     def adjust_joltage(self, button, amount):
+        overcharged = False
         for toggle in button:
             self.joltages[toggle] += amount
+            if self.joltages[toggle] > self.goal_joltages[toggle]:
+                overcharged = True
+        return overcharged
 
 def dfs(machine, num_toggles):
     if num_toggles == 0:
         return machine.is_started()
     else:
         for button in machine.buttons:
-            machine.adjust_joltage(button, 1)
-            if dfs(machine, num_toggles - 1):
-                return True
-            machine.adjust_joltage(button, -1)
+            overcharged = machine.adjust_joltage(button, 1)
+            if overcharged:
+                machine.adjust_joltage(button, -1)
+                return False
+            else:
+                if dfs(machine, num_toggles - 1):
+                    return True
+                machine.adjust_joltage(button, -1)
     return False
 
 def main():
@@ -70,4 +77,8 @@ def main():
     return total_result
 
 if __name__ == "__main__":
-    print(main())
+    start_time = time.time()           # start timer
+    result = main()
+    end_time = time.time()             # end timer
+    print(f"Result: {result}")
+    print(f"Elapsed time: {end_time - start_time:.4f} seconds")
