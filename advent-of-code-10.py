@@ -1,37 +1,13 @@
 import sys
 import time
 
+from z3 import Int, Sum, Optimize
+
 class Machine:
     def __init__(self, button_wirings, goal_joltages):
         self.buttons = button_wirings
         self.goal_joltages = goal_joltages
         self.joltages = [0] * len(goal_joltages)
-
-    def is_started(self):
-        return self.joltages == self.goal_joltages
-
-    def adjust_joltage(self, button, amount):
-        overcharged = False
-        for toggle in button:
-            self.joltages[toggle] += amount
-            if self.joltages[toggle] > self.goal_joltages[toggle]:
-                overcharged = True
-        return overcharged
-
-def dfs(machine, num_toggles):
-    if num_toggles == 0:
-        return machine.is_started()
-    else:
-        for button in machine.buttons:
-            overcharged = machine.adjust_joltage(button, 1)
-            if overcharged:
-                machine.adjust_joltage(button, -1)
-                return False
-            else:
-                if dfs(machine, num_toggles - 1):
-                    return True
-                machine.adjust_joltage(button, -1)
-    return False
 
 def main():
     # Parse input
@@ -64,17 +40,50 @@ def main():
 
     total_result = 0
     for machine in machines:
-        num_toggles = 1
-        
-        while True:
-            print(f"Running with {num_toggles} toggles")
-            if dfs(machine, num_toggles):
-                break
-            num_toggles += 1
+        optimizer = Optimize()
+        N = len(machine.buttons)
 
-        total_result += num_toggles
+        # [y0, y1 ... yN]
+        # Each yi represents the number of times the ith button has been pressed
+        button_presses = [Int(f"y{i}") for i in range(N)]
+        
+        # {indicator : button}
+        # Each pair represents an indicator mapped to a list of buttons that increase its
+        # joltage when pressed
+        indicator_to_button = {}
+        
+        # Initialize indicator_to_button
+        for i in range(len(machine.joltages)):
+            indicator_to_button[i] = []
+
+        # Add buttons to indicators
+        for button, button_indicators in enumerate(machine.buttons):
+            for indicator in button_indicators:
+                indicator_to_button[indicator].append(button)
+
+        # All yi >= 0
+        for y in button_presses:
+            optimizer.add(y >= 0)
+        
+        for indicator, joltage in enumerate(machine.goal_joltages):
+            # Create a constraint for each joltage
+            optimizer.add(Sum([button_presses[i] for i in indicator_to_button[indicator]]) == joltage)
+        
+        # Find the minimum sum
+        handle = optimizer.minimize(Sum(button_presses))
+        optimizer.check()
+        model = optimizer.model()
+
+        total = 0
+        for button in button_presses:
+            # print(model[button].as_long())
+            presses = model[button].as_long()
+            total += presses
+
+        total_result += total
 
     return total_result
+
 
 if __name__ == "__main__":
     start_time = time.time()           # start timer
