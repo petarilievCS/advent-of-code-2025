@@ -1,10 +1,9 @@
 import sys
 
-# Find path svr -> out, such that it contains dac and fft
-
 def main():
     # Parse arguments
     graph = {}
+    graph["out"] = []
     file_name = sys.argv[1]
     with open(file_name, "r") as file:
         for line in file:
@@ -14,27 +13,33 @@ def main():
             neighbors = tokens[1:]
             graph[machine] = neighbors
     
-    def dfs(visited, current, goal):
+    def dfs(current, goal, cache):
         # Reached the end
         if current == goal:
-            if "fft" in visited and "dac" in visited:
-                return 1
-            return 0
+            return 1
         
-        # Already been here
-        elif current in visited:
-            return 0
+        if current in cache:
+            return cache[current]
 
         # Compute answer
         num_paths = 0
-        visited.add(current)
         for neighbor in graph[current]:
-            num_paths += dfs(visited, neighbor)
-        visited.remove(current)
+            num_paths += dfs(neighbor, goal, cache)
         
+        cache[current] = num_paths
         return num_paths
 
-    result = dfs(set(), "svr")
+    svr_fft = dfs("svr", "fft", {})
+    fft_dac = dfs("fft", "dac", {})
+    dac_out = dfs("dac", "out", {})
+    part_1 = svr_fft * fft_dac * dac_out
+
+    svr_dac = dfs("svr", "dac", {})
+    dac_fft = dfs("dac", "fft", {})
+    fft_out = dfs("fft", "out", {})
+    part_2 = svr_dac * dac_fft * fft_out
+
+    result = part_1 + part_2
     print(result)
 
 if __name__=="__main__":
